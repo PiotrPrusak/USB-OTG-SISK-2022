@@ -1,0 +1,36 @@
+/* USER CODE BEGIN Includes */
+#include "usbh_hid.h"
+#include "stdio.h"
+/* USER CODE END Includes */
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+char Uart_Buf[100];
+
+void USBH_HID_EventCallback(USBH_HandleTypeDef *phost)
+{
+	if (USBH_HID_GetDeviceType(phost) == HID_MOUSE )
+	{
+		//contains data from mouse move
+		HID_MOUSE_Info_TypeDef *Mouse_Info;
+		Mouse_Info = USBH_HID_GetMouseInfo(phost);
+
+		int X_VAL = Mouse_Info->x;
+		int Y_VAL = Mouse_Info->y;
+		if (X_VAL > 127) X_VAL -= 255;
+		if (Y_VAL > 127) Y_VAL -= 255;
+
+		int len = sprintf (Uart_Buf, "X=%d, Y=%d, Button1=%d, Button2=%d, Button3=%d,", X_VAL, Y_VAL, \
+						                                Mouse_Info->buttons[0],Mouse_Info->buttons[1], Mouse_Info->buttons[2]);
+		HAL_UART_Transmit(&huart3, (uint8_t *) Uart_Buf, len, 100);
+	}
+	if (USBH_HID_GetDeviceType(phost) == HID_KEYBOARD )
+	{
+		uint8_t key;
+		HID_KEYBD_Info_TypeDef *Keyboard_Info;
+		Keyboard_Info = USBH_HID_GetKeybdInfo(phost);  // get the info
+		key = USBH_HID_GetASCIICode(Keyboard_Info);  // get the key pressed
+		uint8_t len = sprintf (Uart_Buf, "%c", key);
+		HAL_UART_Transmit(&huart3,(uint8_t *) Uart_Buf, len, 100);
+	}
+}
+/* USER CODE END 0 */
